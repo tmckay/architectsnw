@@ -9,6 +9,7 @@ from xml.dom import minidom
 
 def main():
     parser = argparse.ArgumentParser()
+    # e.g. https://www.architectsnw.com/plans/detailedplaninfo.cfm?PlanId=1053
     parser.add_argument('plan')
     parser.add_argument('--debug', default=False, action='store_true') 
     args = parser.parse_args()
@@ -22,10 +23,10 @@ def main():
     handler.setLevel(level)
     logger.addHandler(handler)
 
-    # e.g. https://www.architectsnw.com/plans/detailedplaninfo.cfm?PlanId=1053
-    image_path = args.plan 
+    plan_id_match = re.match(r'([0-9]+)', args.plan)
+    full_url_match = re.match(r'https://.+PlanId=([0-9]+)', args.plan)
 
-    match = re.match(r'https://.+PlanId=([0-9]+)', image_path)
+    match = plan_id_match if plan_id_match else full_url_match
 
     plan_id = match.groups(1)[0]
 
