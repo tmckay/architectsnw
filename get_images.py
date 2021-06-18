@@ -1,37 +1,60 @@
+import argparse
+import logging
 import re
 import sys
 from urllib.request import urlopen
 import webbrowser
 from xml.dom import minidom
 
-# e.g. https://www.architectsnw.com/plans/detailedplaninfo.cfm?PlanId=1053
-image_path = sys.argv[1]
 
-match = re.match(r'https://.+PlanId=([0-9]+)', image_path)
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('plan')
+    parser.add_argument('--debug', default=False, action='store_true') 
+    args = parser.parse_args()
 
-plan_id = match.groups(1)[0]
+    level = logging.INFO
+    if args.debug:
+        level = logging.DEBUG
+    logger = logging.getLogger()
+    logger.setLevel(level)
+    handler = logging.StreamHandler()
+    handler.setLevel(level)
+    logger.addHandler(handler)
 
-print(f'Found plan ID {plan_id}')
+    # e.g. https://www.architectsnw.com/plans/detailedplaninfo.cfm?PlanId=1053
+    image_path = args.plan 
 
-photo_xml_url = f'https://www.architectsnw.com/assets/photoXML/{plan_id}.xml'
+    match = re.match(r'https://.+PlanId=([0-9]+)', image_path)
 
-with urlopen(photo_xml_url) as fh:
-    photo_xml = fh.read().decode('utf-8')
+    plan_id = match.groups(1)[0]
 
-dom = minidom.parseString(photo_xml)
+    logger.debug(f'Found plan ID {plan_id}')
 
-elms = dom.getElementsByTagName('album')
+    photo_xml_url = f'https://www.architectsnw.com/assets/photoXML/{plan_id}.xml'
 
-large_path = elms[0].getAttribute('lgpath')
+    logging.debug(f'Downloading photo XML from {photo_xml_url}')
+    with urlopen(photo_xml_url) as fh:
+        photo_xml = fh.read().decode('utf-8')
 
-if not large_path.startswith('https'):
-    large_path = 'https://www.architectsnw.com/' + large_path
+    dom = minidom.parseString(photo_xml)
 
-imgs = dom.getElementsByTagName('img')
+    elms = dom.getElementsByTagName('album')
 
-img_urls = []
-for img in imgs:
-   img_urls.append(large_path + img.getAttribute('src'))
+    large_path = elms[0].getAttribute('lgpath')
 
-for url in img_urls:
-    webbrowser.open_new_tab(url) 
+    if not large_path.startswith('https'):
+        large_path = 'https://www.architectsnw.com/' + large_path
+
+    imgs = dom.getElementsByTagName('img')
+
+    img_urls = []
+    for img in imgs:
+       img_urls.append(large_path + img.getAttribute('src'))
+
+    for url in img_urls:
+        webbrowser.open_new_tab(url) 
+
+
+if __name__ == '__main__':
+    main()
