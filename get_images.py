@@ -1,3 +1,8 @@
+"""
+Given a plan on architectsnw.com, this script opens all associated
+images in a browser tab. This is because the plan page displays images
+in a slideshow with no controls, so it's difficult to see all the images.
+"""
 import argparse
 import logging
 import re
@@ -10,7 +15,7 @@ from xml.dom import minidom
 def main():
     parser = argparse.ArgumentParser()
     # e.g. https://www.architectsnw.com/plans/detailedplaninfo.cfm?PlanId=1053
-    parser.add_argument('plan')
+    parser.add_argument('plan', help='The full URL to the plan on architectsnw.com')
     parser.add_argument('--debug', default=False, action='store_true')
     args = parser.parse_args()
 
@@ -38,8 +43,8 @@ def main():
     with urlopen(photo_xml_url) as fh:
         photo_xml = fh.read().decode('utf-8')
 
-    # fix parse error found while debugging
-    photo_xml = photo_xml.replace('&', 'and')
+    # fix parse error where & is unescaped
+    photo_xml = photo_xml.replace('&', '&amp;')
 
     dom = minidom.parseString(photo_xml)
 
