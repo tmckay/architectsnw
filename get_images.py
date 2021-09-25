@@ -11,7 +11,7 @@ def main():
     parser = argparse.ArgumentParser()
     # e.g. https://www.architectsnw.com/plans/detailedplaninfo.cfm?PlanId=1053
     parser.add_argument('plan')
-    parser.add_argument('--debug', default=False, action='store_true') 
+    parser.add_argument('--debug', default=False, action='store_true')
     args = parser.parse_args()
 
     level = logging.INFO
@@ -38,13 +38,16 @@ def main():
     with urlopen(photo_xml_url) as fh:
         photo_xml = fh.read().decode('utf-8')
 
+    # fix parse error found while debugging
+    photo_xml = photo_xml.replace('&', 'and')
+
     dom = minidom.parseString(photo_xml)
 
     elms = dom.getElementsByTagName('album')
 
     large_path = elms[0].getAttribute('lgpath')
 
-    if not large_path.startswith('https'):
+    if not large_path.startswith('http'):
         large_path = 'https://www.architectsnw.com/' + large_path
 
     imgs = dom.getElementsByTagName('img')
@@ -54,7 +57,7 @@ def main():
        img_urls.append(large_path + img.getAttribute('src'))
 
     for url in img_urls:
-        webbrowser.open_new_tab(url) 
+        webbrowser.open_new_tab(url)
 
 
 if __name__ == '__main__':
