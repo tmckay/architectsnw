@@ -12,36 +12,48 @@ import webbrowser
 from xml.dom import minidom
 
 
-def main():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     # e.g. https://www.architectsnw.com/plans/detailedplaninfo.cfm?PlanId=1053
     parser.add_argument('plan', help='The full URL to the plan on architectsnw.com')
     parser.add_argument('--debug', default=False, action='store_true')
-    args = parser.parse_args()
+    return parser.parse_args()
 
+
+def get_logger(debug=False) -> logging.Logger:
     level = logging.INFO
-    if args.debug:
+    if debug:
         level = logging.DEBUG
     logger = logging.getLogger()
     logger.setLevel(level)
     handler = logging.StreamHandler()
     handler.setLevel(level)
     logger.addHandler(handler)
+    return logger
 
-    plan_id_match = re.match(r'([0-9]+)', args.plan)
-    full_url_match = re.match(r'https://.+PlanId=([0-9]+)', args.plan)
+
+def get_plan_id_from_url(url):
+    # match just plan ID
+    plan_id_match = re.match(r'([0-9]+)', url)
+    # or if given full URL
+    full_url_match = re.match(r'https://.+PlanId=([0-9]+)', url)
 
     match = plan_id_match if plan_id_match else full_url_match
 
     plan_id = match.groups(1)[0]
+    return plan_id
 
-    logger.debug(f'Found plan ID {plan_id}')
 
+def get_photo_xml(plan_id):
     photo_xml_url = f'https://www.architectsnw.com/assets/photoXML/{plan_id}.xml'
 
     logging.debug(f'Downloading photo XML from {photo_xml_url}')
     with urlopen(photo_xml_url) as fh:
         photo_xml = fh.read().decode('utf-8')
+    return photo_xml
+
+
+def get_img_urls_from_xml(photo_xml):
 
     # fix parse error where & is unescaped
     photo_xml = photo_xml.replace('&', '&amp;')
@@ -61,8 +73,26 @@ def main():
     for img in imgs:
        img_urls.append(large_path + img.getAttribute('src'))
 
+    return img_urls
+
+
+def open_imgs_in_browser(img_urls):
     for url in img_urls:
         webbrowser.open_new_tab(url)
+
+
+def main():
+    args = parse_args()
+    logger = get_logger(args.debug)
+   
+    plan_id = get_plan_id_from_url(args.plan)
+    logger.debug(f'Found plan ID {plan_id}')
+
+    photo_xml = get_photo_xml(plan_id)
+
+    img_urls = get_img_urls_from_xml(photo_xml)
+
+    open_imgs_in_browser(img_urls)
 
 
 if __name__ == '__main__':
