@@ -7,6 +7,7 @@ import argparse
 import logging
 import re
 import sys
+from typing import List
 from urllib.request import urlopen
 import webbrowser
 from xml.dom import minidom
@@ -20,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def get_logger(debug=False) -> logging.Logger:
+def get_logger(debug: bool = False) -> logging.Logger:
     level = logging.INFO
     if debug:
         level = logging.DEBUG
@@ -32,7 +33,7 @@ def get_logger(debug=False) -> logging.Logger:
     return logger
 
 
-def get_plan_id_from_url(url):
+def get_plan_id_from_url(url: str) -> str:
     # match just plan ID
     plan_id_match = re.match(r'([0-9]+)', url)
     # or if given full URL
@@ -44,7 +45,7 @@ def get_plan_id_from_url(url):
     return plan_id
 
 
-def get_photo_xml(plan_id):
+def get_photo_xml(plan_id: str) -> str:
     photo_xml_url = f'https://www.architectsnw.com/assets/photoXML/{plan_id}.xml'
 
     logging.debug(f'Downloading photo XML from {photo_xml_url}')
@@ -53,7 +54,7 @@ def get_photo_xml(plan_id):
     return photo_xml
 
 
-def get_img_urls_from_xml(photo_xml):
+def get_img_urls_from_xml(photo_xml: str) -> List[str]:
 
     # fix parse error where & is unescaped
     photo_xml = photo_xml.replace('&', '&amp;')
@@ -76,7 +77,7 @@ def get_img_urls_from_xml(photo_xml):
     return img_urls
 
 
-def open_imgs_in_browser(img_urls):
+def open_imgs_in_browser(img_urls: List[str]):
     for url in img_urls:
         webbrowser.open_new_tab(url)
 
@@ -84,7 +85,7 @@ def open_imgs_in_browser(img_urls):
 def main():
     args = parse_args()
     logger = get_logger(args.debug)
-   
+
     plan_id = get_plan_id_from_url(args.plan)
     logger.debug(f'Found plan ID {plan_id}')
 
