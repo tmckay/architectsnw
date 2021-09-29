@@ -5,10 +5,13 @@ in a slideshow with no controls, so it's difficult to see all the images.
 """
 import argparse
 import logging
+import os
 import re
 import sys
+import tempfile
 from typing import List
-from urllib.request import urlopen
+from urllib.request import urlopen, urlretrieve
+from urllib.parse import urlparse
 import webbrowser
 from xml.dom import minidom
 
@@ -17,6 +20,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     # e.g. https://www.architectsnw.com/plans/detailedplaninfo.cfm?PlanId=1053
     parser.add_argument('plan', help='The full URL to the plan on architectsnw.com')
+    parser.add_argument('--download', default=False, action='store_true')
     parser.add_argument('--debug', default=False, action='store_true')
     return parser.parse_args()
 
@@ -82,6 +86,18 @@ def open_imgs_in_browser(img_urls: List[str]):
         webbrowser.open_new_tab(url)
 
 
+def download_imgs(img_urls: List[str]) -> str:
+    """Downloads imgs into a temporary directory and returns directory name"""
+    tmp_dir = tempfile.mkdtemp()
+
+    for img_url in img_urls:
+        leaf_name = urlparse(img_url).path.split('/')[-1]
+        local_path = os.path.join(tmp_dir, leaf_name)
+        urlretrieve(img_url, filename=local_path)
+
+    return tmp_dir
+
+
 def main():
     args = parse_args()
     logger = get_logger(args.debug)
@@ -93,7 +109,10 @@ def main():
 
     img_urls = get_img_urls_from_xml(photo_xml)
 
-    open_imgs_in_browser(img_urls)
+    if args.download:
+        print(download_imgs(img_urls))
+    else:
+        open_imgs_in_browser(img_urls)
 
 
 if __name__ == '__main__':
